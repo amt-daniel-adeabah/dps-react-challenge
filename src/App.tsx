@@ -8,6 +8,8 @@ import texts from './texts.json';
 import debounce from './debounce';
 import './App.css';
 
+const Loader: React.FC = () => <div className="loader">Loading...</div>;
+
 const App: React.FC = () => {
 	const [error, setError] = useState<string | null>(null);
 	const [users, setUsers] = useState<User[]>([]);
@@ -16,9 +18,11 @@ const App: React.FC = () => {
 	const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 	const [selectedCity, setSelectedCity] = useState('');
 	const [highlightOldest, setHighlightOldest] = useState(false);
+	const [loading, setLoading] = useState<boolean>(false);
 
 	useEffect(() => {
 		const loadData = async () => {
+			setLoading(true);
 			try {
 				const data = await fetchUsers();
 				setUsers(data);
@@ -26,6 +30,8 @@ const App: React.FC = () => {
 				setCities(Array.from(new Set(allCities)));
 			} catch (error) {
 				setError('Failed to load user data.');
+			} finally {
+				setLoading(false);
 			}
 		};
 
@@ -61,33 +67,46 @@ const App: React.FC = () => {
 
 	return (
 		<div>
-			<div className="flex">
-				<div className="field-div">
-					<span>{texts.table.name}</span>
-					<InputField
-						value={searchTerm}
-						onChange={(e) => {
-							setSearchTerm(e.target.value);
-							handleSearch(e.target.value);
-						}}
+			{loading ? (
+				<Loader />
+			) : (
+				<>
+					<div className="flex">
+						<div className="field-div">
+							<span>{texts.table.name}</span>
+							<InputField
+								value={searchTerm}
+								onChange={(e) => {
+									setSearchTerm(e.target.value);
+									handleSearch(e.target.value);
+								}}
+							/>
+						</div>
+						<div className="field-div">
+							<span>{texts.table.city}</span>
+							<SelectField
+								options={cities}
+								defaultOptionText="Select city"
+								onChange={(e) =>
+									setSelectedCity(e.target.value)
+								}
+							/>
+						</div>
+						<CheckBox
+							checked={highlightOldest}
+							checkBoxLabel="Highlight oldest per city"
+							onChange={(e) =>
+								setHighlightOldest(e.target.checked)
+							}
+						/>
+					</div>
+					{error && <p className="error-message">{error}</p>}
+					<Table
+						users={filteredUsers}
+						highlightOldest={highlightOldest}
 					/>
-				</div>
-				<div className="field-div">
-					<span>{texts.table.city}</span>
-					<SelectField
-						options={cities}
-						defaultOptionText="Select city"
-						onChange={(e) => setSelectedCity(e.target.value)}
-					/>
-				</div>
-				<CheckBox
-					checked={highlightOldest}
-					checkBoxLabel="Highlight oldest per city"
-					onChange={(e) => setHighlightOldest(e.target.checked)}
-				/>
-			</div>
-			{error && <p className="error-message">{error}</p>}
-			<Table users={filteredUsers} highlightOldest={highlightOldest} />
+				</>
+			)}
 		</div>
 	);
 };
