@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { fetchUsers } from './api';
-import SelectField from './components/SelectField';
-import Table from './components/Table';
-import CheckBox from './components/CheckBox';
-import InputField from './components/InputField';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import { fetchUsers } from './api/api';
+import debounce from './hooks/useDebounce';
 import texts from './texts.json';
-import debounce from './debounce';
 import './App.css';
+
+const SelectField = lazy(() => import('./components/SelectField'));
+const Table = lazy(() => import('./components/Table'));
+const CheckBox = lazy(() => import('./components/CheckBox'));
+const InputField = lazy(() => import('./components/InputField'));
 
 const Loader: React.FC = () => <div className="loader">Loading...</div>;
 
@@ -57,57 +58,75 @@ const App: React.FC = () => {
 		[users]
 	);
 
-	const handleSearch = debounce((term: string) => {
-		applyFilters(term, selectedCity);
-	}, 1000);
+	const debouncedSearch = useCallback(
+		debounce((term: string) => {
+			applyFilters(term, selectedCity);
+		}, 1000),
+		[applyFilters, selectedCity]
+	);
 
 	useEffect(() => {
 		applyFilters(searchTerm, selectedCity);
 	}, [searchTerm, selectedCity, applyFilters]);
 
+	const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = e.target.value;
+		setSearchTerm(value);
+		debouncedSearch(value);
+	};
+
+	const handleCityChange = useCallback(
+		(e: React.ChangeEvent<HTMLSelectElement>) => {
+			setSelectedCity(e.target.value);
+		},
+		[]
+	);
+
+	const handleCheckboxChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			setHighlightOldest(e.target.checked);
+		},
+		[]
+	);
+
 	return (
-		<div>
-			{loading ? (
-				<Loader />
-			) : (
-				<>
-					<div className="flex">
-						<div className="field-div">
-							<span>{texts.table.name}</span>
-							<InputField
-								value={searchTerm}
-								onChange={(e) => {
-									setSearchTerm(e.target.value);
-									handleSearch(e.target.value);
-								}}
+		<Suspense fallback={<Loader />}>
+			<div>
+				{loading ? (
+					<Loader />
+				) : (
+					<>
+						<div className="flex">
+							<div className="field-div">
+								<span>{texts.table.name}</span>
+								<InputField
+									value={searchTerm}
+									onChange={handleSearch}
+								/>
+							</div>
+							<div className="field-div">
+								<span>{texts.table.city}</span>
+								<SelectField
+									options={cities}
+									defaultOptionText="Select city"
+									onChange={handleCityChange}
+								/>
+							</div>
+							<CheckBox
+								checked={highlightOldest}
+								checkBoxLabel="Highlight oldest per city"
+								onChange={handleCheckboxChange}
 							/>
 						</div>
-						<div className="field-div">
-							<span>{texts.table.city}</span>
-							<SelectField
-								options={cities}
-								defaultOptionText="Select city"
-								onChange={(e) =>
-									setSelectedCity(e.target.value)
-								}
-							/>
-						</div>
-						<CheckBox
-							checked={highlightOldest}
-							checkBoxLabel="Highlight oldest per city"
-							onChange={(e) =>
-								setHighlightOldest(e.target.checked)
-							}
+						{error && <p className="error-message">{error}</p>}
+						<Table
+							users={filteredUsers}
+							highlightOldest={highlightOldest}
 						/>
-					</div>
-					{error && <p className="error-message">{error}</p>}
-					<Table
-						users={filteredUsers}
-						highlightOldest={highlightOldest}
-					/>
-				</>
-			)}
-		</div>
+					</>
+				)}
+			</div>
+		</Suspense>
 	);
 };
 
