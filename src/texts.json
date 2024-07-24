@@ -1,0 +1,7 @@
+{
+	"table": {
+		"name": "Name",
+		"city": "City",
+		"birthDate": "Birthday"
+	}
+}
