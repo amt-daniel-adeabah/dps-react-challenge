@@ -25,11 +25,11 @@ const Table: React.FC<TableProps> = ({ users, highlightOldest }) => {
 	return (
 		<table>
 			<thead>
-				<tr>
-					<th>{texts.table.name}</th>
-					<th>{texts.table.city}</th>
-					<th>{texts.table.birthDate}</th>
-				</tr>
+				<th className="rows underline font-bold">
+					<div>{texts.table.name}</div>
+					<div>{texts.table.city}</div>
+					<div>{texts.table.birthDate}</div>
+				</th>
 			</thead>
 			<tbody>
 				{users.map((user) => (
@@ -42,13 +42,18 @@ const Table: React.FC<TableProps> = ({ users, highlightOldest }) => {
 								: ''
 						}
 					>
-						<td>{`${user.firstName} ${user.lastName}`}</td>
-						<td>{user.address.city}</td>
-						<td>{user.birthDate}</td>
+						<td>
+							<div className="rows">
+								<div>{`${user.firstName} ${user.lastName}`}</div>
+								<div>{user.address.city}</div>
+								<div>{user.birthDate}</div>
+							</div>
+						</td>
 					</tr>
 				))}
 			</tbody>
 		</table>
 	);
 };
+
 export default Table;
